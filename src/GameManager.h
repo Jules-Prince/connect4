@@ -6,6 +6,10 @@
 #include <array>
 #include <plog/Log.h>
 
+#define LCOV_EXCL_START
+#define LCOV_EXCL_END
+#define LCOV_EXCL_LINE
+
 class GameManager {
 private:
     std::array<Player, 2> players;
@@ -14,23 +18,26 @@ private:
     bool gameFinished;
 
     void switchPlayer();
-    void handleMouseClick();
-    void handleKeyPress();
 
 public:
     GameManager(Grid& gameGrid);
-    void update();
     
-    // Game flow methods
+    // Méthodes de logique de jeu (à tester)
     void handleTurn(int column);
     Player* getCurrentPlayer();
     void resetGame();
-    bool isGameFinish() const;
+    bool isGameFinished() const;
     
-    // Rendering
+    // Méthodes de rendu et d'événements (exclues de la couverture)
+
+    void update();
+    void handleMouseClick();
+    void handleKeyPress();
+    void handleRender() const;
     void renderPlayerInfo() const;
     void renderGameFinish() const;
-    void handleRender() const;
+    
 };
 
-#endif //GAME_MANAGER
+
+#endif // GAME_MANAGER

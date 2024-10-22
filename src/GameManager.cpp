@@ -7,6 +7,71 @@ GameManager::GameManager(Grid &gameGrid)
     players[1].setTurn(false);
 }
 
+void GameManager::switchPlayer()
+{
+    currentPlayer->setTurn(false);
+    currentPlayer = (currentPlayer == &players[0]) ? &players[1] : &players[0];
+    currentPlayer->setTurn(true);
+}
+
+void GameManager::handleTurn(int col)
+{
+    if (gameFinished)
+    {
+        PLOGW << "Move attempted but game is over";
+        return;
+    }
+
+    Grid::PlacementResult result = grid.placePiece(col, currentPlayer->getId());
+
+    if (result.success)
+    {
+        PLOGI << "Player " << currentPlayer->getId() << " placed piece in column " << col;
+
+        if (result.isWinning)
+        {
+            gameFinished = true;
+            currentPlayer->incrementScore();
+            PLOGI << "Player " << currentPlayer->getId() << " wins! Score: " << players[0].getScore() << " - " << players[1].getScore();
+            return;
+        }
+
+        switchPlayer();
+        PLOGD << "Turn switched to Player " << currentPlayer->getId();
+    }
+    else
+    {
+        PLOGE << "Invalid move attempted in column " << col;
+    }
+}
+
+Player *GameManager::getCurrentPlayer()
+{
+    return currentPlayer;
+}
+
+void GameManager::resetGame()
+{
+    grid.clear();
+    currentPlayer = &players[0];
+    players[0].setTurn(true);
+    players[1].setTurn(false);
+    gameFinished = false;
+    PLOGI << "Game reset. Scores: " << players[0].getScore() << " - " << players[1].getScore();
+}
+
+bool GameManager::isGameFinished() const
+{
+    return gameFinished;
+}
+
+LCOV_EXCL_START
+void GameManager::update()
+{
+    handleMouseClick();
+    handleKeyPress();
+}
+
 void GameManager::handleMouseClick()
 {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
@@ -20,68 +85,37 @@ void GameManager::handleMouseClick()
     }
 }
 
-void GameManager::handleKeyPress()
-{
-    if (IsKeyPressed(KEY_R))
-    {
-        resetGame();
-    }
+void GameManager::handleKeyPress() {
+        if (IsKeyPressed(KEY_R)) {
+            resetGame();
+        }
 }
 
-void GameManager::update()
+void GameManager::handleRender() const
 {
-    handleMouseClick();
-    handleKeyPress();
-}
-
-void GameManager::switchPlayer()
-{
-    currentPlayer->setTurn(false);
-    currentPlayer = (currentPlayer == &players[0]) ? &players[1] : &players[0];
-    currentPlayer->setTurn(true);
-}
-
-void GameManager::handleTurn(int column)
-{
+    grid.render(players[0].getColor(), players[1].getColor());
+    renderPlayerInfo();
     if (gameFinished)
     {
-        PLOGW << "Move attempted but game is over";
-        return;
+        renderGameFinish();
     }
+}
 
-    if (grid.placePiece(column, currentPlayer->getId()))
+void GameManager::renderPlayerInfo() const
+{
+    // Draw current player indicator
+    if (!gameFinished)
     {
-        PLOGI << "Player " << currentPlayer->getId() << " placed piece in column " << column;
-        // Pieced has been placed successfully
-        if (grid.checkWin(grid.getLowestEmptyRow(column) + 1, column, currentPlayer->getId()))
-        {
-            gameFinished = true;
-            currentPlayer->incrementScore();
-            PLOGI << "Player " << currentPlayer->getId() << " wins! Score: " 
-                  << players[0].getScore() << " - " << players[1].getScore();
-            return;
-        }
-        switchPlayer();
-        PLOGD << "Turn switched to Player " << currentPlayer->getId();
-    } else {
-        PLOGE << "Invalid move attempted in column " << column;
+        char message[32];
+        snprintf(message, sizeof(message), "Player %d's Turn", currentPlayer->getId());
+        DrawText(message, 10, 10, 20, BLACK);
     }
-}
 
-void GameManager::resetGame()
-{
-    grid.clear();
-    currentPlayer = &players[0];
-    players[0].setTurn(true);
-    players[1].setTurn(false);
-    gameFinished = false;
-    PLOGI << "Game reset. Scores: " << players[0].getScore() 
-          << " - " << players[1].getScore();
-}
-
-bool GameManager::isGameFinish() const
-{
-    return gameFinished;
+    // Draw scores
+    char scoreMessage[32];
+    snprintf(scoreMessage, sizeof(scoreMessage), "P1: %d | P2: %d",
+             players[0].getScore(), players[1].getScore());
+    DrawText(scoreMessage, 10, 40, 20, BLACK);
 }
 
 void GameManager::renderGameFinish() const
@@ -106,29 +140,4 @@ void GameManager::renderGameFinish() const
              currentPlayer->getColor());
 }
 
-void GameManager::renderPlayerInfo() const
-{
-    // Draw current player indicator
-    if (!gameFinished)
-    {
-        char message[32];
-        snprintf(message, sizeof(message), "Player %d's Turn", currentPlayer->getId());
-        DrawText(message, 10, 10, 20, BLACK);
-    }
-
-    // Draw scores
-    char scoreMessage[32];
-    snprintf(scoreMessage, sizeof(scoreMessage), "P1: %d | P2: %d",
-             players[0].getScore(), players[1].getScore());
-    DrawText(scoreMessage, 10, 40, 20, BLACK);
-}
-
-void GameManager::handleRender() const
-{
-    grid.render(players[0].getColor(), players[1].getColor());
-    renderPlayerInfo();
-    if (gameFinished)
-    {
-        renderGameFinish();
-    }
-}
+LCOV_EXCL_END
