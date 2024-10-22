@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
 name: CMake on a single platform
 
 on:
@@ -28,7 +26,8 @@ jobs:
           extra-cmake-modules \
           libdecor-0-dev \
           libegl1-mesa-dev \
-          xorg-dev
+          xorg-dev \
+          lcov
 
     - name: Configure CMake
       run: cmake -S ${{github.workspace}} -B ${{github.workspace}}/build -Wno-dev
@@ -36,5 +35,29 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Test
-      run: ${{github.workspace}}/build/connect4_test
+    - name: Test with Coverage
+      run: |
+        cd ${{github.workspace}}/build
+        ./connect4_test
+        lcov --capture --directory . --output-file coverage.info --ignore-errors inconsistent,mismatch
+        lcov --remove coverage.info '/usr/*' '*/tests/*' '*/googletest/*' '*/build/_deps/plog-src/include/plog/*' --output-file coverage.info --ignore-errors inconsistent,mismatch
+        
+        # Extract coverage percentage and check threshold
+        COVERAGE_PERCENT=$(lcov --summary coverage.info | grep "lines" | cut -d '|' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+        echo "Coverage: $COVERAGE_PERCENT%"
+        
+        if (( $(echo "$COVERAGE_PERCENT < 75" | bc -l) )); then
+          echo "Code coverage is below 75% (actual: $COVERAGE_PERCENT%)"
+          exit 1
+        fi
+
+    - name: Generate Coverage Report
+      run: |
+        cd ${{github.workspace}}/build
+        genhtml coverage.info --output-directory coverage_report
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: ${{github.workspace}}/build/coverage_report
