@@ -1,15 +1,23 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 project(connect4 CXX)
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
 # Adding Raylib
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
-set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
+set(BUILD_GAMES OFF CACHE BOOL "" FORCE) # don't build the supplied example games
+
+# Disable OpenGL deprecation warnings on macOS
+if(APPLE)
+    add_compile_definitions(GL_SILENCE_DEPRECATION)
+endif()
 
 FetchContent_Declare(
     raylib
@@ -18,18 +26,37 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(raylib)
+# Adding plog
+FetchContent_Declare(
+    plog
+    GIT_REPOSITORY "https://github.com/SergiusTheBest/plog.git"
+    GIT_TAG "master"
+    GIT_PROGRESS TRUE
+)
+
+# Make dependencies available
+FetchContent_MakeAvailable(raylib plog)
 
 # Adding our source files
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp")
-set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/") # Define PROJECT_INCLUDE to be the path to the include directory of the project
+set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/")
 
 # Declaring our executable
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_include_directories(${PROJECT_NAME} 
+    PRIVATE 
+        ${PROJECT_INCLUDE}
+        ${plog_SOURCE_DIR}/include
+)
+target_link_libraries(${PROJECT_NAME} 
+    PRIVATE 
+        raylib
+)
 
 # Setting ASSETS_PATH
-target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/") # Set the asset path macro to the absolute path on the dev machine
-#target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="./assets") # Set the asset path macro in release mode to a relative path that assumes the assets folder is in the same directory as the game executable
+target_compile_definitions(${PROJECT_NAME} 
+    PUBLIC 
+        ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/"
+) 
+#target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="./assets")
