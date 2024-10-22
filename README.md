@@ -40,3 +40,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/sources/*.cpp")
 ```
 After this just reload cmake and it should build fine.
+
+
+# Build ⚒️
+
+1. Generate build folder and install raylib run it once ```bash cmake -S . -B build```
+
+2. Build app ```bash cmake --build build```
+
+ 
