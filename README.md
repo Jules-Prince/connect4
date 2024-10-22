@@ -44,8 +44,8 @@ After this just reload cmake and it should build fine.
 
 # Build ⚒️
 
-1. Generate build folder and install raylib run it once ```bash cmake -S . -B build```
+1. Generate build folder and install raylib run it once ```cmake -S . -B build```
 
-2. Build app ```bash cmake --build build```
+2. Build app ```cmake --build build```
 
  
